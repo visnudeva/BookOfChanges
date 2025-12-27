@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Digital Yiking | Modern Oracle</title>
+    <title>The Digital Yiking | Oracle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
@@ -40,6 +40,40 @@
             overflow-x: hidden;
         }
 
+        /* --- Header & Toggle --- */
+        header {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        #lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #lang-toggle:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
         /* --- Typography --- */
         h1, h2, h3 {
             font-family: 'Cinzel', serif;
@@ -54,6 +88,7 @@
             -webkit-text-fill-color: transparent;
             text-align: center;
             letter-spacing: 2px;
+            margin-top: 10px;
         }
 
         .subtitle {
@@ -260,14 +295,6 @@
             font-size: 1.1rem;
         }
 
-        .hex-binary {
-            font-family: monospace;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            font-size: 0.8rem;
-            letter-spacing: 5px;
-        }
-
         .hex-description {
             font-size: 1rem;
             line-height: 1.6;
@@ -327,8 +354,9 @@
 <body>
 
     <header>
-        <h1>THE YIKING</h1>
-        <div class="subtitle">Book of Changes</div>
+        <button id="lang-toggle" title="Switch Language">FR</button>
+        <h1 id="app-title">THE YIKING</h1>
+        <div class="subtitle" id="app-subtitle">Book of Changes</div>
     </header>
 
     <main>
@@ -360,7 +388,6 @@
         <article id="result-card">
             <h2 class="hex-name" id="res-name"></h2>
             <p class="hex-pinyin" id="res-pinyin"></p>
-            <div class="hex-binary" id="res-binary"></div>
             <div class="keywords" id="res-keywords"></div>
             <p class="hex-description" id="res-desc"></p>
             <div class="moving-lines-msg" id="moving-msg">
@@ -373,76 +400,354 @@
 
     <script>
         /**
-         * HEXAGRAM DATA
-         * Keys are binary strings where 1 = Yang (—) and 0 = Yin (— —).
-         * The string represents lines from Top (Line 6) to Bottom (Line 1).
-         * Example: "111111" is The Creative (Qian).
+         * LANGUAGE CONFIGURATION
+         */
+        const uiText = {
+            en: {
+                title: "THE YIKING",
+                subtitle: "Book of Changes",
+                cast: "Cast the Coins",
+                consulting: "Consulting...",
+                castAgain: "Cast Again",
+                movingMsg: "Moving lines detected. Change is imminent."
+            },
+            fr: {
+                title: "LE YIKING",
+                subtitle: "Livre des Mutations",
+                cast: "Tirer les Pièces",
+                consulting: "Consultation...",
+                castAgain: "Rejouer",
+                movingMsg: "Lignes mutantes détectées. Le changement est imminent."
+            }
+        };
+
+        let currentLang = 'en';
+
+        /**
+         * HEXAGRAM DATA (Bilingual)
+         * Keys are binary strings: 1 = Yang, 0 = Yin (Top to Bottom).
          */
         const hexagramData = {
-            "111111": { name: "The Creative", pinyin: "Qián", keywords: ["Force", "Creativity", "Persistence"], desc: "The work begins. Supreme success. Furthering through perseverance." },
-            "000000": { name: "The Receptive", pinyin: "Kūn", keywords: ["Yielding", "Devotion", "Support"], desc: "Supreme success. The mare has calmness. If you undertake something, confusion leads to misfortune." },
-            "100010": { name: "Difficulty at Beginning", pinyin: "Zhūn", keywords: ["New Start", "Obstacles", "Hope"], desc: "Supreme success. Furthering through perseverance. Do not seek to undertake anything." },
-            "010001": { name: "Youthful Folly", pinyin: "Méng", keywords: ["Ignorance", "Learning", "Growth"], desc: "Success. I do not seek the youthful fool; The youthful fool seeks me." },
-            "111010": { name: "Waiting", pinyin: "Xū", keywords: ["Patience", "Nourishment", "Timing"], desc: "You are correct in waiting. If you are sincere, you have light and success." },
-            "010111": { name: "Conflict", pinyin: "Sòng", keywords: ["Struggle", "Lawsuit", "Retreat"], desc: "You are sincere and are being obstructed. A cautious halt brings good fortune." },
-            "010000": { name: "The Army", pinyin: "Shī", keywords: ["Discipline", "Collective", "Action"], desc: "The army needs perseverance and a strong man. Good fortune without blame." },
-            "000010": { name: "Holding Together", pinyin: "Bǐ", keywords: ["Unity", "Alliance", "Cooperation"], desc: "Hold together with good fortune." },
-            "111011": { name: "Small Taming", pinyin: "Xiǎo Chǔ", keywords: ["Modesty", "Restraint", "Preparation"], desc: "Dense clouds, no rain yet. The west wind brings rain." },
-            "110111": { name: "Treading", pinyin: "Lǚ", keywords: ["Conduct", "Carefulness", "Progress"], desc: "Treading upon the tail of the tiger. It does not bite the man. Success." },
-            "111000": { name: "Peace", pinyin: "Tài", keywords: ["Prosperity", "Harmony", "Expansion"], desc: "The small departs, the great approaches. Good fortune. Success." },
-            "000111": { name: "Standstill", pinyin: "Pǐ", keywords: ["Stagnation", "Withdrawal", "Patience"], desc: "The great departs, the small approaches. Persistence brings misfortune." },
-            "101111": { name: "Fellowship", pinyin: "Tóng Rén", keywords: ["Community", "Relationships", "Sharing"], desc: "Fellowship with men in the open. Success. Perseverance furthers." },
-            "111101": { name: "Great Possession", pinyin: "Dà Yǒu", keywords: ["Abundance", "Power", "Clarity"], desc: "Supreme success." },
-            "001000": { name: "Modesty", pinyin: "Qiān", keywords: ["Humility", "Respect", "Acceptance"], desc: "Success. The superior man carries things through." },
-            "000100": { name: "Enthusiasm", pinyin: "Yù", keywords: ["Inspiration", "Movement", "Awakening"], desc: "Success. It furthers one to install helpers and to set armies marching." },
-            "100110": { name: "Following", pinyin: "Suí", keywords: ["Adaptability", "Flow", "Leadership"], desc: "Supreme success. Perseverance furthers. No blame." },
-            "011001": { name: "Work on the Decayed", pinyin: "Gǔ", keywords: ["Renewal", "Restoration", "Duty"], desc: "Supreme success. Before the starting point, three days. After the starting point, three days." },
-            "110001": { name: "Approach", pinyin: "Lín", keywords: ["Progress", "Expansion", "Care"], desc: "Supreme success. Perseverance furthers." },
-            "100011": { name: "Contemplation", pinyin: "Guān", keywords: ["Perspective", "View", "Stillness"], desc: "Contemplation. The ablution has been made, but not yet the offering. Full sincerity." },
-            "100101": { name: "Biting Through", pinyin: "Shì Kè", keywords: ["Decision", "Obstacles", "Justice"], desc: "Biting through has success. It is favorable to let justice be administered." },
-            "101001": { name: "Grace", pinyin: "Bì", keywords: ["Beauty", "Adornment", "Form"], desc: "Grace has success. In small matters. It is favorable to undertake something." },
-            "000001": { name: "Splitting Apart", pinyin: "Bō", keywords: ["Decay", "Disintegration", "Collapse"], desc: "Splitting apart. It does not further one to go anywhere." },
-            "100000": { name: "Return", pinyin: "Fù", keywords: ["Rebirth", "Cycle", "Turning Point"], desc: "Return. Success. Going out and coming in without error. Friends come without blame." },
-            "100111": { name: "Innocence", pinyin: "Wú Wàng", keywords: ["Purity", "Spontaneity", "Naturalness"], desc: "Innocent. Supreme success. Perseverance furthers. If someone is not as he should be, he has misfortune." },
-            "111001": { name: "Great Taming", pinyin: "Dà Chù", keywords: ["Great Power", "Self-Control", "Stopping"], desc: "Great Taming. Perseverance furthers. Not eating at home brings good fortune." },
-            "100001": { name: "Mouth Corners", pinyin: "Yí", keywords: ["Nourishment", "Speech", "Health"], desc: "The corners of the mouth. Perseverance brings good fortune. Pay heed to the providing of nourishment." },
-            "011110": { name: "Great Preponderance", pinyin: "Dà Guò", keywords: ["Excess", "Crisis", "Load"], desc: "Great Preponderance. The ridgepole sags to the breaking point. It furthers one to have somewhere to go." },
-            "010010": { name: "The Abysmal", pinyin: "Kǎn", keywords: ["Danger", "Depth", "Wisdom"], desc: "The Abysmal repeated. If you are sincere, you have success in your heart." },
-            "101101": { name: "The Clinging", pinyin: "Lí", keywords: ["Dependence", "Clarity", "Radiance"], desc: "The Clinging. Perseverance furthers. It brings success. Care of the cow brings good fortune." },
-            "001110": { name: "Influence", pinyin: "Xián", keywords: ["Attraction", "Courtship", "Response"], desc: "Influence. Success. Perseverance furthers. Take a maiden for your wife." },
-            "011100": { name: "Duration", pinyin: "Héng", keywords: ["Constancy", "Steadfastness", "Time"], desc: "Duration. Success. No blame. Perseverance furthers. To have somewhere to go brings good fortune." },
-            "001111": { name: "Retreat", pinyin: "Dùn", keywords: ["Withdrawal", "Solitude", "Retreat"], desc: "Retreat. Success. In small matters, good fortune." },
-            "111100": { name: "Great Power", pinyin: "Dà Zhuàng", keywords: ["Great Strength", "Vigor", "Potential"], desc: "Great Power. Perseverance furthers." },
-            "000101": { name: "Progress", pinyin: "Jìn", keywords: ["Advancement", "Success", "Shine"], desc: "Progress. The powerful prince is honored with horses in large numbers." },
-            "101000": { name: "Darkened", pinyin: "Míng Yí", keywords: ["Adversity", "Patience", "Light"], desc: "Darkening of the Light. In adversity, it furthers one to be persevering." },
-            "101011": { name: "The Family", pinyin: "Jiā Rén", keywords: ["Home", "Relationships", "Duty"], desc: "The Family. The perseverance of the woman furthers." },
-            "110101": { name: "Opposition", pinyin: "Kuí", keywords: ["Conflict", "Alienation", "Understanding"], desc: "Opposition. In small matters, good fortune." },
-            "001010": { name: "Obstruction", pinyin: "Jiǎn", keywords: ["Difficulty", "Halt", "Reflection"], desc: "Obstruction. The southwest furthers. The northeast does not further." },
-            "010100": { name: "Deliverance", pinyin: "Xiè", keywords: ["Release", "Solution", "Freedom"], desc: "Deliverance. The southwest furthers. If there is no longer anything where one has to go, return brings good fortune." },
-            "110001": { name: "Decrease", pinyin: "Sǔn", keywords: ["Loss", "Sacrifice", "Humility"], desc: "Decrease combined with sincerity brings about supreme success without misfortune." },
-            "100011": { name: "Increase", pinyin: "Yì", keywords: ["Gain", "Growth", "Blessing"], desc: "Increase. Supreme success. Perseverance furthers." },
-            "111110": { name: "Breakthrough", pinyin: "Guài", keywords: ["Resoluteness", "Action", "Clarity"], desc: "Breakthrough. One must resolutely make the matter known at the court of the king." },
-            "011111": { name: "Coming to Meet", pinyin: "Gòu", keywords: ["Encounter", "Warning", "Feminine Power"], desc: "Coming to Meet. The maiden is powerful. One should not marry such a maiden." },
-            "000110": { name: "Gathering", pinyin: "Cuì", keywords: ["Union", "Masses", "Support"], desc: "Gathering together. Success. The king approaches his temple. It furthers one to see the great man." },
-            "011000": { name: "Pushing Upward", pinyin: "Shēng", keywords: ["Ascension", "Growth", "Effort"], desc: "Pushing upward has supreme success. One must see the great man. Fear not." },
-            "010110": { name: "Oppression", pinyin: "Kùn", keywords: ["Hardship", "Exhaustion", "Endurance"], desc: "Oppression. Success. Perseverance. The great man brings about good fortune. No blame." },
-            "011010": { name: "The Well", pinyin: "Jǐng", keywords: ["Resource", "Depth", "Nourishment"], desc: "The Well. The town may be changed, but the well cannot be changed." },
-            "011011": { name: "Revolution", pinyin: "Gé", keywords: ["Change", "Molting", "Transition"], desc: "Revolution. On your own day you are believed. Supreme success. Furthering through perseverance brings remorse." },
-            "001101": { name: "The Cauldron", pinyin: "Dǐng", keywords: ["Establishment", "Nourishment", "Civilization"], desc: "The Cauldron. Supreme good fortune. Success." },
-            "100100": { name: "The Arousing", pinyin: "Zhèn", keywords: ["Shock", "Movement", "Awakening"], desc: "The Arousing brings success. The Arousing comes." },
-            "001001": { name: "Keeping Still", pinyin: "Gèn", keywords: ["Stagnation", "Rest", "Stillness"], desc: "Keeping Still. Keeping his back still so that he no longer feels his body." },
-            "001011": { name: "Development", pinyin: "Jiàn", keywords: ["Gradual Progress", "Steady", "Courtship"], desc: "Development. The maiden is given in marriage. Good fortune. Perseverance furthers." },
-            "110100": { name: "The Marrying Maiden", pinyin: "Guī Mèi", keywords: ["Subordination", "Marginality"], desc: "The Marrying Maiden. Undertakings bring misfortune. Nothing that would further." },
-            "101100": { name: "Abundance", pinyin: "Fēng", keywords: ["Fullness", "Peak", "Clarity"], desc: "Abundance has success. The king attains abundance. Be not sad." },
-            "001110": { name: "The Wanderer", pinyin: "Lǚ", keywords: ["Travel", "Frugality", "Caution"], desc: "The Wanderer. Success through smallness. Perseverance brings good fortune to the wanderer." },
-            "101010": { name: "The Gentle", pinyin: "Xùn", keywords: ["Penetrating", "Wind", "Flexibility"], desc: "The Gentle. Success through what is small. It furthers one to have somewhere to go." },
-            "011101": { name: "The Joyous", pinyin: "Duì", keywords: ["Pleasure", "Friendliness", "Openness"], desc: "The Joyous. Success. Perseverance is favorable." },
-            "010011": { name: "Dispersion", pinyin: "Huàn", keywords: ["Disintegration", "Release", "Spiritual"], desc: "Dispersion. Success. The king approaches his temple. It furthers one to cross the great water." },
-            "110010": { name: "Limitation", pinyin: "Jié", keywords: ["Discipline", "Moderation", "Boundaries"], desc: "Limitation. Success. Galling limitation must not be persevered in." },
-            "110011": { name: "Inner Truth", pinyin: "Zhōng Fú", keywords: ["Sincerity", "Trust", "Heart"], desc: "Inner Truth. Pigs and fishes. Good fortune. It furthers one to cross the great water." },
-            "001100": { name: "Small Preponderance", pinyin: "Xiǎo Guò", keywords: ["Excess Minor", "Detail", "Caution"], desc: "Small Preponderance. Success. Perseverance furthers. Small things may be done; great things should not be done." },
-            "101010": { name: "After Completion", pinyin: "Jì Jì", keywords: ["Ending", "Transition", "Care"], desc: "After Completion. Success in small matters. Perseverance furthers." },
-            "010101": { name: "Before Completion", pinyin: "Wèi Jì", keywords: ["Beginning", "Chaos", "Potential"], desc: "Before Completion. Success. But the small fox crosses the ice. Get his tail wet." }
+            "111111": { 
+                pinyin: "Qián", 
+                en: { name: "The Creative", keywords: ["Force", "Creativity", "Persistence"], desc: "The work begins. Supreme success. Furthering through perseverance." }, 
+                fr: { name: "Le Créateur", keywords: ["Force", "Créativité", "Persévérance"], desc: "L'œuvre commence. Succès suprême. La persévérance favorise l'avancement." } 
+            },
+            "000000": { 
+                pinyin: "Kūn", 
+                en: { name: "The Receptive", keywords: ["Yielding", "Devotion", "Support"], desc: "Supreme success. The mare has calmness. If you undertake something, confusion leads to misfortune." }, 
+                fr: { name: "Le Récepteur", keywords: ["Docilité", "Dévouement", "Soutien"], desc: "Succès suprême. La jument a de la patience. Si vous entreprenez quelque chose, la confusion mène au malheur." } 
+            },
+            "100010": { 
+                pinyin: "Zhūn", 
+                en: { name: "Difficulty at Beginning", keywords: ["New Start", "Obstacles", "Hope"], desc: "Supreme success. Furthering through perseverance. Do not seek to undertake anything." }, 
+                fr: { name: "La Difficulté au Début", keywords: ["Nouveau Départ", "Obstacles", "Espérance"], desc: "Succès suprême. Persévérance. Ne cherchez pas à entreprendre quoi que ce soit maintenant." } 
+            },
+            "010001": { 
+                pinyin: "Méng", 
+                en: { name: "Youthful Folly", keywords: ["Ignorance", "Learning", "Growth"], desc: "Success. I do not seek the youthful fool; The youthful fool seeks me." }, 
+                fr: { name: "La Folie de la Jeunesse", keywords: ["Ignorance", "Apprentissage", "Croissance"], desc: "Succès. Ce n'est pas moi qui cherche le jeune ignorant ; c'est le jeune ignorant qui me cherche." } 
+            },
+            "111010": { 
+                pinyin: "Xū", 
+                en: { name: "Waiting", keywords: ["Patience", "Nourishment", "Timing"], desc: "You are correct in waiting. If you are sincere, you have light and success." }, 
+                fr: { name: "L'Attente", keywords: ["Patience", "Nourriture", "Temps"], desc: "Il est juste d'attendre. Si vous êtes sincère, vous aurez lumière et succès." } 
+            },
+            "010111": { 
+                pinyin: "Sòng", 
+                en: { name: "Conflict", keywords: ["Struggle", "Lawsuit", "Retreat"], desc: "You are sincere and are being obstructed. A cautious halt brings good fortune." }, 
+                fr: { name: "Le Conflit", keywords: ["Lutte", "Procès", "Recul"], desc: "Vous êtes sincère mais vous êtes empêché. Une halte prudente apporte le bonheur." } 
+            },
+            "010000": { 
+                pinyin: "Shī", 
+                en: { name: "The Army", keywords: ["Discipline", "Collective", "Action"], desc: "The army needs perseverance and a strong man. Good fortune without blame." }, 
+                fr: { name: "L'Armée", keywords: ["Discipline", "Collectif", "Action"], desc: "L'armée a besoin de persévérance et d'un homme fort. Bonheur sans faute." } 
+            },
+            "000010": { 
+                pinyin: "Bǐ", 
+                en: { name: "Holding Together", keywords: ["Unity", "Alliance", "Cooperation"], desc: "Hold together with good fortune." }, 
+                fr: { name: "L'Union", keywords: ["Unité", "Alliance", "Coopération"], desc: "Tenir ensemble apporte le bonheur." } 
+            },
+            "111011": { 
+                pinyin: "Xiǎo Chǔ", 
+                en: { name: "Small Taming", keywords: ["Modesty", "Restraint", "Preparation"], desc: "Dense clouds, no rain yet. The west wind brings rain." }, 
+                fr: { name: "Le Petit Retenue", keywords: ["Modestie", "Restriction", "Préparation"], desc: "Nuages denses, pas encore de pluie. Le vent d'ouest apporte la pluie." } 
+            },
+            "110111": { 
+                pinyin: "Lǚ", 
+                en: { name: "Treading", keywords: ["Conduct", "Carefulness", "Progress"], desc: "Treading upon the tail of the tiger. It does not bite the man. Success." }, 
+                fr: { name: "La Marche", keywords: ["Conduite", "Prudence", "Progrès"], desc: "Marcher sur la queue du tigre. Il ne mord pas l'homme. Succès." } 
+            },
+            "111000": { 
+                pinyin: "Tài", 
+                en: { name: "Peace", keywords: ["Prosperity", "Harmony", "Expansion"], desc: "The small departs, the great approaches. Good fortune. Success." }, 
+                fr: { name: "La Paix", keywords: ["Prospérité", "Harmonie", "Expansion"], desc: "Le petit s'en va, le grand approche. Bonheur. Succès." } 
+            },
+            "000111": { 
+                pinyin: "Pǐ", 
+                en: { name: "Standstill", keywords: ["Stagnation", "Withdrawal", "Patience"], desc: "The great departs, the small approaches. Persistence brings misfortune." }, 
+                fr: { name: "L'Arrêt", keywords: ["Stagnation", "Retrait", "Patience"], desc: "Le grand s'en va, le petit approche. La persistance amène le malheur." } 
+            },
+            "101111": { 
+                pinyin: "Tóng Rén", 
+                en: { name: "Fellowship", keywords: ["Community", "Relationships", "Sharing"], desc: "Fellowship with men in the open. Success. Perseverance furthers." }, 
+                fr: { name: "La Communauté", keywords: ["Communauté", "Relations", "Partage"], desc: "Communauté avec les hommes en plein air. Succès. La persévérance favorise." } 
+            },
+            "111101": { 
+                pinyin: "Dà Yǒu", 
+                en: { name: "Great Possession", keywords: ["Abundance", "Power", "Clarity"], desc: "Supreme success." }, 
+                fr: { name: "La Grande Possession", keywords: ["Abondance", "Puissance", "Clarté"], desc: "Succès suprême." } 
+            },
+            "001000": { 
+                pinyin: "Qiān", 
+                en: { name: "Modesty", keywords: ["Humility", "Respect", "Acceptance"], desc: "Success. The superior man carries things through." }, 
+                fr: { name: "La Modestie", keywords: ["Humilité", "Respect", "Acceptation"], desc: "Succès. L'homme supérieur mène les choses à bien." } 
+            },
+            "000100": { 
+                pinyin: "Yù", 
+                en: { name: "Enthusiasm", keywords: ["Inspiration", "Movement", "Awakening"], desc: "Success. It furthers one to install helpers and to set armies marching." }, 
+                fr: { name: "L'Enthousiasme", keywords: ["Inspiration", "Mouvement", "Éveil"], desc: "Succès. Il est utile d'installer des aides et de mettre les armées en marche." } 
+            },
+            "100110": { 
+                pinyin: "Suí", 
+                en: { name: "Following", keywords: ["Adaptability", "Flow", "Leadership"], desc: "Supreme success. Perseverance furthers. No blame." }, 
+                fr: { name: "Suivre", keywords: ["Adaptabilité", "Flux", "Leadership"], desc: "Succès suprême. La persévérance favorise. Aucune faute." } 
+            },
+            "011001": { 
+                pinyin: "Gǔ", 
+                en: { name: "Work on the Decayed", keywords: ["Renewal", "Restoration", "Duty"], desc: "Supreme success. Before the starting point, three days. After the starting point, three days." }, 
+                fr: { name: "Travailler sur le Décrépit", keywords: ["Renouveau", "Restauration", "Devoir"], desc: "Succès suprême. Trois jours avant le début. Trois jours après le début." } 
+            },
+            "110001": { 
+                pinyin: "Lín", 
+                en: { name: "Approach", keywords: ["Progress", "Expansion", "Care"], desc: "Supreme success. Perseverance furthers." }, 
+                fr: { name: "L'Approche", keywords: ["Progrès", "Expansion", "Soin"], desc: "Succès suprême. La persévérance favorise." } 
+            },
+            "100011": { 
+                pinyin: "Guān", 
+                en: { name: "Contemplation", keywords: ["Perspective", "View", "Stillness"], desc: "Contemplation. The ablution has been made, but not yet the offering. Full sincerity." }, 
+                fr: { name: "La Contemplation", keywords: ["Perspective", "Vue", "Calm"], desc: "Contemplation. L'ablution a été faite, mais pas encore l'offrande. Sincérité totale." } 
+            },
+            "100101": { 
+                pinyin: "Shì Kè", 
+                en: { name: "Biting Through", keywords: ["Decision", "Obstacles", "Justice"], desc: "Biting through has success. It is favorable to let justice be administered." }, 
+                fr: { name: "Mordre à Travers", keywords: ["Décision", "Obstacles", "Justice"], desc: "Mordre a du succès. Il est favorable de laisser la justice être administrée." } 
+            },
+            "101001": { 
+                pinyin: "Bì", 
+                en: { name: "Grace", keywords: ["Beauty", "Adornment", "Form"], desc: "Grace has success. In small matters. It is favorable to undertake something." }, 
+                fr: { name: "La Grâce", keywords: ["Beauté", "Ornement", "Forme"], desc: "La grâce a du succès. Dans les petites choses. Il est favorable d'entreprendre." } 
+            },
+            "000001": { 
+                pinyin: "Bō", 
+                en: { name: "Splitting Apart", keywords: ["Decay", "Disintegration", "Collapse"], desc: "Splitting apart. It does not further one to go anywhere." }, 
+                fr: { name: "La Dislocation", keywords: ["Pourriture", "Désintégration", "Effondrement"], desc: "Dislocation. Il n'avance à rien d'aller quelque part." } 
+            },
+            "100000": { 
+                pinyin: "Fù", 
+                en: { name: "Return", keywords: ["Rebirth", "Cycle", "Turning Point"], desc: "Return. Success. Going out and coming in without error. Friends come without blame." }, 
+                fr: { name: "Le Retour", keywords: ["Renaissance", "Cycle", "Point Tournant"], desc: "Retour. Succès. Sortir et entrer sans erreur. Les amis viennent sans faute." } 
+            },
+            "100111": { 
+                pinyin: "Wú Wàng", 
+                en: { name: "Innocence", keywords: ["Purity", "Spontaneity", "Naturalness"], desc: "Innocent. Supreme success. Perseverance furthers. If someone is not as he should be, he has misfortune." }, 
+                fr: { name: "L'Innocence", keywords: ["Pureté", "Spontanéité", "Naturalité"], desc: "Innocent. Succès suprême. La persévérance favorise. Si quelqu'un n'est pas comme il devrait, il a le malheur." } 
+            },
+            "111001": { 
+                pinyin: "Dà Chù", 
+                en: { name: "Great Taming", keywords: ["Great Power", "Self-Control", "Stopping"], desc: "Great Taming. Perseverance furthers. Not eating at home brings good fortune." }, 
+                fr: { name: "La Grande Entrave", keywords: ["Grand Puissance", "Maîtise de Soi", "Arrêt"], desc: "Grande Entrave. La persévérance favorise. Ne pas manger chez soi apporte le bonheur." } 
+            },
+            "100001": { 
+                pinyin: "Yí", 
+                en: { name: "Mouth Corners", keywords: ["Nourishment", "Speech", "Health"], desc: "The corners of the mouth. Perseverance brings good fortune. Pay heed to the providing of nourishment." }, 
+                fr: { name: "Les Coins de la Bouche", keywords: ["Nourriture", "Parole", "Santé"], desc: "Les coins de la bouche. La persévérance apporte le bonheur. Prêtez attention à l'apport de nourriture." } 
+            },
+            "011110": { 
+                pinyin: "Dà Guò", 
+                en: { name: "Great Preponderance", keywords: ["Excess", "Crisis", "Load"], desc: "Great Preponderance. The ridgepole sags to the breaking point. It furthers one to have somewhere to go." }, 
+                fr: { name: "La Prépondérance du Grand", keywords: ["Excès", "Crise", "Charge"], desc: "Prépondérance du Grand. Le faîte pèse jusqu'au point de rupture. Il est utile d'avoir où aller." } 
+            },
+            "010010": { 
+                pinyin: "Kǎn", 
+                en: { name: "The Abysmal", keywords: ["Danger", "Depth", "Wisdom"], desc: "The Abysmal repeated. If you are sincere, you have success in your heart." }, 
+                fr: { name: "L'Abysse", keywords: ["Danger", "Profondeur", "Sagesse"], desc: "L'abysme répété. Si vous êtes sincère, vous avez du succès dans votre cœur." } 
+            },
+            "101101": { 
+                pinyin: "Lí", 
+                en: { name: "The Clinging", keywords: ["Dependence", "Clarity", "Radiance"], desc: "The Clinging. Perseverance furthers. It brings success. Care of the cow brings good fortune." }, 
+                fr: { name: "L'Adhérence", keywords: ["Dépendance", "Clarté", "Rayonnement"], desc: "L'Adhérence. La persévérance favorise. Cela apporte le succès. S'occuper de la vache apporte le bonheur." } 
+            },
+            "001110": { 
+                pinyin: "Xián", 
+                en: { name: "Influence", keywords: ["Attraction", "Courtship", "Response"], desc: "Influence. Success. Perseverance furthers. Take a maiden for your wife." }, 
+                fr: { name: "L'Influence", keywords: ["Attraction", "Séduction", "Réponse"], desc: "Influence. Succès. La persévérance favorise. Prendre une jeune fille pour épouse." } 
+            },
+            "011100": { 
+                pinyin: "Héng", 
+                en: { name: "Duration", keywords: ["Constancy", "Steadfastness", "Time"], desc: "Duration. Success. No blame. Perseverance furthers. To have somewhere to go brings good fortune." }, 
+                fr: { name: "La Durée", keywords: ["Constance", "Fermeté", "Temps"], desc: "La Durée. Succès. Pas de faute. La persévérance favorise. Avoir où aller apporte le bonheur." } 
+            },
+            "001111": { 
+                pinyin: "Dùn", 
+                en: { name: "Retreat", keywords: ["Withdrawal", "Solitude", "Retreat"], desc: "Retreat. Success. In small matters, good fortune." }, 
+                fr: { name: "La Retraite", keywords: ["Retrait", "Solitude", "Repli"], desc: "Retraite. Succès. Dans les petites choses, bonheur." } 
+            },
+            "111100": { 
+                pinyin: "Dà Zhuàng", 
+                en: { name: "Great Power", keywords: ["Great Strength", "Vigor", "Potential"], desc: "Great Power. Perseverance furthers." }, 
+                fr: { name: "La Grandeur", keywords: ["Grande Force", "Vigueur", "Potentiel"], desc: "La Grandeur. La persévérance favorise." } 
+            },
+            "000101": { 
+                pinyin: "Jìn", 
+                en: { name: "Progress", keywords: ["Advancement", "Success", "Shine"], desc: "Progress. The powerful prince is honored with horses in large numbers." }, 
+                fr: { name: "Le Progrès", keywords: ["Avancement", "Succès", "Lumière"], desc: "Le Progrès. Le prince puissant est honoré d'un grand nombre de chevaux." } 
+            },
+            "101000": { 
+                pinyin: "Míng Yí", 
+                en: { name: "Darkened", keywords: ["Adversity", "Patience", "Light"], desc: "Darkening of the Light. In adversity, it furthers one to be persevering." }, 
+                fr: { name: "L'Obscurcissement", keywords: ["Adversité", "Patience", "Lumière"], desc: "Obscurcissement de la Lumière. Dans l'adversité, il est utile d'être persévérant." } 
+            },
+            "101011": { 
+                pinyin: "Jiā Rén", 
+                en: { name: "The Family", keywords: ["Home", "Relationships", "Duty"], desc: "The Family. The perseverance of the woman furthers." }, 
+                fr: { name: "La Famille", keywords: ["Foyer", "Relations", "Devoir"], desc: "La Famille. La persévérance de la femme favorise." } 
+            },
+            "110101": { 
+                pinyin: "Kuí", 
+                en: { name: "Opposition", keywords: ["Conflict", "Alienation", "Understanding"], desc: "Opposition. In small matters, good fortune." }, 
+                fr: { name: "L'Opposition", keywords: ["Conflit", "Aliénation", "Compréhension"], desc: "Opposition. Dans les petites choses, bonheur." } 
+            },
+            "001010": { 
+                pinyin: "Jiǎn", 
+                en: { name: "Obstruction", keywords: ["Difficulty", "Halt", "Reflection"], desc: "Obstruction. The southwest furthers. The northeast does not further." }, 
+                fr: { name: "L'Entrave", keywords: ["Difficulté", "Arrêt", "Réflexion"], desc: "L'Entrave. Le sud-ouest favorise. Le nord-est ne favorise pas." } 
+            },
+            "010100": { 
+                pinyin: "Xiè", 
+                en: { name: "Deliverance", keywords: ["Release", "Solution", "Freedom"], desc: "Deliverance. The southwest furthers. If there is no longer anything where one has to go, return brings good fortune." }, 
+                fr: { name: "La Délivrance", keywords: ["Libération", "Solution", "Liberté"], desc: "La Délivrance. Le sud-ouest favorise. S'il n'y a plus rien où aller, le retour apporte le bonheur." } 
+            },
+            "110001": { 
+                pinyin: "Sǔn", 
+                en: { name: "Decrease", keywords: ["Loss", "Sacrifice", "Humility"], desc: "Decrease combined with sincerity brings about supreme success without misfortune." }, 
+                fr: { name: "La Diminution", keywords: ["Perte", "Sacrifice", "Humilité"], desc: "La diminution combinée avec la sincérité apporte un succès suprême sans malheur." } 
+            },
+            "100011": { 
+                pinyin: "Yì", 
+                en: { name: "Increase", keywords: ["Gain", "Growth", "Blessing"], desc: "Increase. Supreme success. Perseverance furthers." }, 
+                fr: { name: "L'Accroissement", keywords: ["Gain", "Croissance", "Bénédiction"], desc: "L'Accroissement. Succès suprême. La persévérance favorise." } 
+            },
+            "111110": { 
+                pinyin: "Guài", 
+                en: { name: "Breakthrough", keywords: ["Resoluteness", "Action", "Clarity"], desc: "Breakthrough. One must resolutely make the matter known at the court of the king." }, 
+                fr: { name: "L'Élancement", keywords: ["Résolution", "Action", "Clarté"], desc: "L'Élancement. On doit résolument faire connaître l'affaire à la cour du roi." } 
+            },
+            "011111": { 
+                pinyin: "Gòu", 
+                en: { name: "Coming to Meet", keywords: ["Encounter", "Warning", "Feminine Power"], desc: "Coming to Meet. The maiden is powerful. One should not marry such a maiden." }, 
+                fr: { name: "La Rencontre", keywords: ["Rencontre", "Avertissement", "Pouvoir Féminin"], desc: "La Rencontre. La jeune fille est puissante. On ne doit pas épouser une telle jeune fille." } 
+            },
+            "000110": { 
+                pinyin: "Cuì", 
+                en: { name: "Gathering", keywords: ["Union", "Masses", "Support"], desc: "Gathering together. Success. The king approaches his temple. It furthers one to see the great man." }, 
+                fr: { name: "Le Rassemblement", keywords: ["Union", "Masse", "Soutien"], desc: "Rassemblement. Succès. Le roi s'approche de son temple. Il est utile de voir le grand homme." } 
+            },
+            "011000": { 
+                pinyin: "Shēng", 
+                en: { name: "Pushing Upward", keywords: ["Ascension", "Growth", "Effort"], desc: "Pushing upward has supreme success. One must see the great man. Fear not." }, 
+                fr: { name: "L'Ascension", keywords: ["Ascension", "Croissance", "Effort"], desc: "L'Ascension a un succès suprême. On doit voir le grand homme. Ne craignez pas." } 
+            },
+            "010110": { 
+                pinyin: "Kùn", 
+                en: { name: "Oppression", keywords: ["Hardship", "Exhaustion", "Endurance"], desc: "Oppression. Success. Perseverance. The great man brings about good fortune. No blame." }, 
+                fr: { name: "L'Oppression", keywords: ["Détresse", "Épuisement", "Endurance"], desc: "L'Oppression. Succès. Persévérance. Le grand homme apporte le bonheur. Pas de faute." } 
+            },
+            "011010": { 
+                pinyin: "Jǐng", 
+                en: { name: "The Well", keywords: ["Resource", "Depth", "Nourishment"], desc: "The Well. The town may be changed, but the well cannot be changed." }, 
+                fr: { name: "Le Puits", keywords: ["Ressource", "Profondeur", "Nourriture"], desc: "Le Puits. La ville peut changer, mais le puits ne peut changer." } 
+            },
+            "011011": { 
+                pinyin: "Gé", 
+                en: { name: "Revolution", keywords: ["Change", "Molting", "Transition"], desc: "Revolution. On your own day you are believed. Supreme success. Furthering through perseverance brings remorse." }, 
+                fr: { name: "La Révolution", keywords: ["Changement", "Mue", "Transition"], desc: "La Révolution. En votre propre jour, vous êtes cru. Succès suprême. Avancer par persévérance apporte des remords." } 
+            },
+            "001101": { 
+                pinyin: "Dǐng", 
+                en: { name: "The Cauldron", keywords: ["Establishment", "Nourishment", "Civilization"], desc: "The Cauldron. Supreme good fortune. Success." }, 
+                fr: { name: "Le Chaudron", keywords: ["Établissement", "Nourriture", "Civilisation"], desc: "Le Chaudron. Grand bonheur. Succès." } 
+            },
+            "100100": { 
+                pinyin: "Zhèn", 
+                en: { name: "The Arousing", keywords: ["Shock", "Movement", "Awakening"], desc: "The Arousing brings success. The Arousing comes." }, 
+                fr: { name: "L'Éveilleur", keywords: ["Choc", "Mouvement", "Réveil"], desc: "L'Éveilleur apporte le succès. L'Éveilleur arrive." } 
+            },
+            "001001": { 
+                pinyin: "Gèn", 
+                en: { name: "Keeping Still", keywords: ["Stagnation", "Rest", "Stillness"], desc: "Keeping Still. Keeping his back still so that he no longer feels his body." }, 
+                fr: { name: "Le Repos", keywords: ["Stagnation", "Repos", "Calme"], desc: "Le Repos. Garder son dos immobile pour qu'il ne ressente plus son corps." } 
+            },
+            "001011": { 
+                pinyin: "Jiàn", 
+                en: { name: "Development", keywords: ["Gradual Progress", "Steady", "Courtship"], desc: "Development. The maiden is given in marriage. Good fortune. Perseverance furthers." }, 
+                fr: { name: "Le Développement", keywords: ["Progrès Graduel", "Stable", "Cour"], desc: "Le Développement. La jeune fille est donnée en mariage. Bonheur. La persévérance favorise." } 
+            },
+            "110100": { 
+                pinyin: "Guī Mèi", 
+                en: { name: "The Marrying Maiden", keywords: ["Subordination", "Marginality"], desc: "The Marrying Maiden. Undertakings bring misfortune. Nothing that would further." }, 
+                fr: { name: "La Mariée", keywords: ["Subordination", "Marginalité"], desc: "La Mariée. Les entreprises amènent le malheur. Rien qui favorise." } 
+            },
+            "101100": { 
+                pinyin: "Fēng", 
+                en: { name: "Abundance", keywords: ["Fullness", "Peak", "Clarity"], desc: "Abundance has success. The king attains abundance. Be not sad." }, 
+                fr: { name: "L'Abondance", keywords: ["Plénitude", "Sommet", "Clarté"], desc: "L'Abondance a du succès. Le roi atteint l'abondance. Ne soyez pas triste." } 
+            },
+            "001110": { 
+                pinyin: "Lǚ", 
+                en: { name: "The Wanderer", keywords: ["Travel", "Frugality", "Caution"], desc: "The Wanderer. Success through smallness. Perseverance brings good fortune to the wanderer." }, 
+                fr: { name: "Le Voyageur", keywords: ["Voyage", "Frugalité", "Prudence"], desc: "Le Voyageur. Succès par la petitesse. La persévérance apporte le bonheur au voyageur." } 
+            },
+            "101010": { 
+                pinyin: "Xùn", 
+                en: { name: "The Gentle", keywords: ["Penetrating", "Wind", "Flexibility"], desc: "The Gentle. Success through what is small. It furthers one to have somewhere to go." }, 
+                fr: { name: "Le Doux", keywords: ["Pénétration", "Vent", "Flexibilité"], desc: "Le Doux. Succès par la petitesse. Il est utile d'avoir où aller." } 
+            },
+            "011101": { 
+                pinyin: "Duì", 
+                en: { name: "The Joyous", keywords: ["Pleasure", "Friendliness", "Openness"], desc: "The Joyous. Success. Perseverance is favorable." }, 
+                fr: { name: "Le Joyeux", keywords: ["Plaisir", "Amitié", "Ouverture"], desc: "Le Joyeux. Succès. La persévérance est favorable." } 
+            },
+            "010011": { 
+                pinyin: "Huàn", 
+                en: { name: "Dispersion", keywords: ["Disintegration", "Release", "Spiritual"], desc: "Dispersion. Success. The king approaches his temple. It furthers one to cross the great water." }, 
+                fr: { name: "La Dispersion", keywords: ["Désintégration", "Libération", "Spirituel"], desc: "La Dispersion. Succès. Le roi s'approche de son temple. Il est utile de traverser la grande eau." } 
+            },
+            "110010": { 
+                pinyin: "Jié", 
+                en: { name: "Limitation", keywords: ["Discipline", "Moderation", "Boundaries"], desc: "Limitation. Success. Galling limitation must not be persevered in." }, 
+                fr: { name: "La Limitation", keywords: ["Discipline", "Modération", "Limites"], desc: "La Limitation. Succès. Une limitation irritante ne doit pas être persévérée." } 
+            },
+            "110011": { 
+                pinyin: "Zhōng Fú", 
+                en: { name: "Inner Truth", keywords: ["Sincerity", "Trust", "Heart"], desc: "Inner Truth. Pigs and fishes. Good fortune. It furthers one to cross the great water." }, 
+                fr: { name: "La Vérité Intérieure", keywords: ["Sincérité", "Confiance", "Cœur"], desc: "La Vérité Intérieure. Cochons et poissons. Bonheur. Il est utile de traverser la grande eau." } 
+            },
+            "001100": { 
+                pinyin: "Xiǎo Guò", 
+                en: { name: "Small Preponderance", keywords: ["Excess Minor", "Detail", "Caution"], desc: "Small Preponderance. Success. Perseverance furthers. Small things may be done; great things should not be done." }, 
+                fr: { name: "La Prépondérance du Petit", keywords: ["Excès Mineur", "Détail", "Prudence"], desc: "La Prépondérance du Petit. Succès. La persévérance favorise. Les petites choses peuvent être faites ; les grandes choses ne doivent pas l'être." } 
+            },
+            "101010": { 
+                pinyin: "Jì Jì", 
+                en: { name: "After Completion", keywords: ["Ending", "Transition", "Care"], desc: "After Completion. Success in small matters. Perseverance furthers." }, 
+                fr: { name: "Après l'Accomplissement", keywords: ["Fin", "Transition", "Soin"], desc: "Après l'Accomplissement. Succès dans les petites choses. La persévérance favorise." } 
+            },
+            "010101": { 
+                pinyin: "Wèi Jì", 
+                en: { name: "Before Completion", keywords: ["Beginning", "Chaos", "Potential"], desc: "Before Completion. Success. But the small fox crosses the ice. Get his tail wet." }, 
+                fr: { name: "Avant l'Accomplissement", keywords: ["Début", "Chaos", "Potentiel"], desc: "Avant l'Accomplissement. Succès. Mais le petit renard traverse la glace. Il mouille sa queue." } 
+            }
         };
 
         // DOM Elements
@@ -452,18 +757,18 @@
         const resultCard = document.getElementById('result-card');
         const resName = document.getElementById('res-name');
         const resPinyin = document.getElementById('res-pinyin');
-        const resBinary = document.getElementById('res-binary');
         const resDesc = document.getElementById('res-desc');
         const resKeywords = document.getElementById('res-keywords');
         const movingMsg = document.getElementById('moving-msg');
         const toast = document.getElementById('toast');
+        const langToggle = document.getElementById('lang-toggle');
+        const appTitle = document.getElementById('app-title');
+        const appSubtitle = document.getElementById('app-subtitle');
 
         // State
         let isCasting = false;
-        const lines = []; // Will store 6 lines (bottom to top)
-
-        // Helper: Random Integer
-        const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const lines = []; 
+        let currentHexKey = null; // Store current hexagram to re-translate
 
         // Helper: Show Toast
         function showToast(msg) {
@@ -472,40 +777,52 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
+        // Function: Toggle Language
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'fr' : 'en';
+            langToggle.textContent = currentLang === 'en' ? 'FR' : 'ENG';
+            
+            // Update UI Text
+            const txt = uiText[currentLang];
+            appTitle.textContent = txt.title;
+            appSubtitle.textContent = txt.subtitle;
+            if (isCasting) {
+                castBtn.textContent = txt.consulting;
+            } else {
+                castBtn.textContent = lines.length > 0 ? txt.castAgain : txt.cast;
+            }
+            movingMsg.textContent = txt.movingMsg;
+
+            // Re-display result if exists
+            if (currentHexKey) {
+                displayResult(currentHexKey);
+            }
+        }
+
+        langToggle.addEventListener('click', toggleLanguage);
+
         // Function: Toss 3 Coins
         function tossCoins() {
             return new Promise((resolve) => {
                 const coins = document.querySelectorAll('.coin');
                 let sum = 0;
-                let rotations = [];
 
-                coins.forEach((coin, index) => {
+                coins.forEach((coin) => {
                     // Logic: Heads = 3, Tails = 2
-                    // 6 (Old Yin), 7 (Young Yang), 8 (Young Yin), 9 (Old Yang)
                     const isHead = Math.random() > 0.5;
                     const val = isHead ? 3 : 2;
                     sum += val;
 
-                    // Visual Rotation logic
-                    // Base spins + additional spins for result
-                    // If Head: multiple of 360 (ends 0), If Tail: multiple of 360 + 180 (ends 180)
                     const baseSpins = 5 * 360; 
                     const outcomeRot = isHead ? 0 : 180;
                     const totalRot = baseSpins + outcomeRot;
-                    
-                    // Add some randomness to start to look natural
                     const randomStart = Math.floor(Math.random() * 360);
                     
                     coin.style.transition = 'none';
                     coin.style.transform = `rotateY(${randomStart}deg)`;
-                    
-                    // Trigger reflow
-                    coin.offsetHeight; 
-                    
+                    coin.offsetHeight; // Reflow
                     coin.style.transition = 'transform 1s ease-out';
                     coin.style.transform = `rotateY(${totalRot}deg)`;
-                    
-                    // Save current rotation so next spin adds to it
                     coin.dataset.currentRot = totalRot + randomStart;
                 });
 
@@ -517,15 +834,11 @@
 
         // Function: Interpret Coin Sum
         function interpretLine(sum) {
-            // 6 = Old Yin (0 moving)
-            // 7 = Young Yang (1 static)
-            // 8 = Young Yin (0 static)
-            // 9 = Old Yang (1 moving)
             if (sum === 6) return { val: 0, type: 'yin', moving: true };
             if (sum === 7) return { val: 1, type: 'yang', moving: false };
             if (sum === 8) return { val: 0, type: 'yin', moving: false };
             if (sum === 9) return { val: 1, type: 'yang', moving: true };
-            return { val: 1, type: 'yang', moving: false }; // fallback
+            return { val: 1, type: 'yang', moving: false };
         }
 
         // Function: Render Line visually
@@ -533,10 +846,7 @@
             const lineEl = document.createElement('div');
             lineEl.className = `line ${lineObj.type}`;
             if (lineObj.moving) lineEl.classList.add('moving');
-            
-            // Staggered animation
             lineEl.style.animationDelay = `${index * 0.2}s`;
-            
             hexContainer.appendChild(lineEl);
         }
 
@@ -544,76 +854,58 @@
         async function castHexagram() {
             if (isCasting) return;
             isCasting = true;
-            castBtn.disabled = true;
-            castBtn.textContent = "Consulting...";
             
-            // Reset
+            // Update Button State
+            castBtn.disabled = true;
+            castBtn.textContent = uiText[currentLang].consulting;
+            
+            // Reset Visuals
             lines.length = 0;
             hexContainer.innerHTML = '';
             hexContainer.classList.remove('visible');
             resultCard.style.display = 'none';
+            currentHexKey = null;
             
-            // Wait a tiny bit to ensure UI updates
             await new Promise(r => setTimeout(r, 200));
-            
             hexContainer.classList.add('visible');
 
             // Toss 6 times
             for (let i = 0; i < 6; i++) {
                 const sum = await tossCoins();
                 const lineData = interpretLine(sum);
-                
-                // Add to array (bottom to top, but we unshift to visual stack is handled by flex-direction: column-reverse)
-                // Actually, let's just store them. The DOM append puts them at the bottom due to column-reverse.
                 lines.push(lineData);
                 renderLine(lineData, i);
-                
-                // Small pause between lines
                 await new Promise(r => setTimeout(r, 300));
             }
 
             // Compile Result
-            // The binary key in our data object is Top-to-Bottom.
-            // Our 'lines' array is Bottom-to-Top (index 0 is bottom line 1).
-            // So we need to reverse 'lines' to get Top-to-Bottom for the lookup key.
             const topToBottom = [...lines].reverse();
             const binaryKey = topToBottom.map(l => l.val).join('');
+            currentHexKey = binaryKey;
             
             displayResult(binaryKey);
 
-            // Reset State
             isCasting = false;
             castBtn.disabled = false;
-            castBtn.textContent = "Cast Again";
+            castBtn.textContent = uiText[currentLang].castAgain;
         }
 
         // Display Result
         function displayResult(key) {
             const data = hexagramData[key];
+            const txt = data[currentLang]; // Get lang specific data
             
-            if (!data) {
-                console.error("Key not found:", key);
-                resName.textContent = "Unknown";
-                resDesc.textContent = "The universe is silent.";
-                return;
-            }
-
-            resName.textContent = data.name;
+            resName.textContent = txt.name;
             resPinyin.textContent = data.pinyin;
-            resDesc.textContent = data.desc;
-            resBinary.textContent = `BINARY: ${key}`;
+            resDesc.textContent = txt.desc;
             
-            // Tags
-            resKeywords.innerHTML = data.keywords.map(k => `<span class="tag">${k}</span>`).join('');
+            resKeywords.innerHTML = txt.keywords.map(k => `<span class="tag">${k}</span>`).join('');
 
-            // Moving Lines Warning
             const hasMoving = lines.some(l => l.moving);
             movingMsg.style.display = hasMoving ? 'block' : 'none';
 
-            // Show Card
             resultCard.style.display = 'block';
             
-            // Scroll to result on mobile
             if (window.innerWidth < 600) {
                 resultCard.scrollIntoView({ behavior: 'smooth' });
             }
