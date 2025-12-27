@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Digital Yiking | Modern Oracle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --gold: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.4);
+            --moving-color: #ff4757; /* Vibrant Red for moving lines */
+            --moving-glow: rgba(255, 71, 87, 0.6);
+            --coin-silver: #bdc3c7;
+            --coin-gold: #f1c40f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1a1d26 0%, var(--bg-color) 80%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: 'Cinzel', serif;
+            font-weight: 400;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+
+        /* --- Layout --- */
+        main {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* --- The Stage (Coin Animation) --- */
+        #stage {
+            width: 100%;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 2rem;
+            perspective: 1000px;
+        }
+
+        .coin {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s ease-out;
+        }
+
+        .coin-side {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .coin-head {
+            background: radial-gradient(circle at 30% 30%, var(--coin-gold), #b7950b);
+            color: #5d4d06;
+            transform: rotateY(0deg);
+        }
+
+        .coin-tail {
+            background: radial-gradient(circle at 30% 30%, var(--coin-silver), #7f8c8d);
+            color: #2c3e50;
+            transform: rotateY(180deg);
+        }
+
+        .coin.active {
+            animation: toss 1s ease-in-out;
+        }
+
+        @keyframes toss {
+            0% { transform: rotateY(0) translateY(0); }
+            50% { transform: rotateY(720deg) translateY(-100px); }
+            100% { transform: rotateY(var(--final-rotation)) translateY(0); }
+        }
+
+        /* --- Hexagram Display --- */
+        #hexagram-container {
+            width: 300px;
+            height: 200px;
+            display: flex;
+            flex-direction: column-reverse; /* Lines build from bottom */
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #hexagram-container.visible {
+            opacity: 1;
+        }
+
+        .line {
+            height: 16px;
+            width: 100%;
+            background: var(--text-main);
+            position: relative;
+            box-shadow: 0 0 5px var(--gold-glow);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInLine 0.5s forwards;
+        }
+
+        @keyframes fadeInLine {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Yang (Solid) */
+        .line.yang {
+            background: var(--text-main);
+        }
+
+        /* Moving Yang (Solid Red) */
+        .line.yang.moving {
+            background: var(--moving-color);
+            box-shadow: 0 0 10px var(--moving-glow);
+        }
+
+        /* Yin (Broken) */
+        .line.yin {
+            background: transparent;
+            display: flex;
+            justify-content: space-between;
+        }
+        .line.yin::before, .line.yin::after {
+            content: '';
+            display: block;
+            width: 44%;
+            height: 100%;
+            background: var(--text-main);
+            box-shadow: 0 0 5px var(--gold-glow);
+        }
+
+        /* Moving Yin (Broken Red) */
+        .line.yin.moving::before,
+        .line.yin.moving::after {
+            background: var(--moving-color);
+            box-shadow: 0 0 8px var(--moving-glow);
+        }
+
+        /* --- Controls --- */
+        #cast-btn {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 15px 40px;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        #cast-btn:hover {
+            background: var(--gold);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--gold-glow);
+        }
+
+        #cast-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        /* --- Result Card --- */
+        #result-card {
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            display: none;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hex-name {
+            font-size: 2rem;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+
+        .hex-pinyin {
+            font-style: italic;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .hex-binary {
+            font-family: monospace;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            letter-spacing: 5px;
+        }
+
+        .hex-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        .moving-lines-msg {
+            color: var(--moving-color);
+            font-size: 0.9rem;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: none;
+            font-weight: bold;
+        }
+
+        .keywords {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .tag {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        /* --- Toast Notification --- */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        #toast.show {
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>THE YIKING</h1>
+        <div class="subtitle">Book of Changes</div>
+    </header>
+
+    <main>
+        <!-- Animation Stage -->
+        <section id="stage">
+            <div class="coin" id="coin1">
+                <div class="coin-side coin-head">Y</div>
+                <div class="coin-side coin-tail">—</div>
+            </div>
+            <div class="coin" id="coin2">
+                <div class="coin-side coin-head">Y</div>
+                <div class="coin-side coin-tail">—</div>
+            </div>
+            <div class="coin" id="coin3">
+                <div class="coin-side coin-head">Y</div>
+                <div class="coin-side coin-tail">—</div>
+            </div>
+        </section>
+
+        <!-- Hexagram Construction Area -->
+        <section id="hexagram-container">
+            <!-- Lines will be injected here -->
+        </section>
+
+        <!-- Controls -->
+        <button id="cast-btn">Cast the Coins</button>
+
+        <!-- Result Display -->
+        <article id="result-card">
+            <h2 class="hex-name" id="res-name"></h2>
+            <p class="hex-pinyin" id="res-pinyin"></p>
+            <div class="hex-binary" id="res-binary"></div>
+            <div class="keywords" id="res-keywords"></div>
+            <p class="hex-description" id="res-desc"></p>
+            <div class="moving-lines-msg" id="moving-msg">
+                Moving lines detected. Change is imminent.
+            </div>
+        </article>
+    </main>
+
+    <div id="toast"></div>
+
+    <script>
+        /**
+         * HEXAGRAM DATA
+         * Keys are binary strings where 1 = Yang (—) and 0 = Yin (— —).
+         * The string represents lines from Top (Line 6) to Bottom (Line 1).
+         * Example: "111111" is The Creative (Qian).
+         */
+        const hexagramData = {
+            "111111": { name: "The Creative", pinyin: "Qián", keywords: ["Force", "Creativity", "Persistence"], desc: "The work begins. Supreme success. Furthering through perseverance." },
+            "000000": { name: "The Receptive", pinyin: "Kūn", keywords: ["Yielding", "Devotion", "Support"], desc: "Supreme success. The mare has calmness. If you undertake something, confusion leads to misfortune." },
+            "100010": { name: "Difficulty at Beginning", pinyin: "Zhūn", keywords: ["New Start", "Obstacles", "Hope"], desc: "Supreme success. Furthering through perseverance. Do not seek to undertake anything." },
+            "010001": { name: "Youthful Folly", pinyin: "Méng", keywords: ["Ignorance", "Learning", "Growth"], desc: "Success. I do not seek the youthful fool; The youthful fool seeks me." },
+            "111010": { name: "Waiting", pinyin: "Xū", keywords: ["Patience", "Nourishment", "Timing"], desc: "You are correct in waiting. If you are sincere, you have light and success." },
+            "010111": { name: "Conflict", pinyin: "Sòng", keywords: ["Struggle", "Lawsuit", "Retreat"], desc: "You are sincere and are being obstructed. A cautious halt brings good fortune." },
+            "010000": { name: "The Army", pinyin: "Shī", keywords: ["Discipline", "Collective", "Action"], desc: "The army needs perseverance and a strong man. Good fortune without blame." },
+            "000010": { name: "Holding Together", pinyin: "Bǐ", keywords: ["Unity", "Alliance", "Cooperation"], desc: "Hold together with good fortune." },
+            "111011": { name: "Small Taming", pinyin: "Xiǎo Chǔ", keywords: ["Modesty", "Restraint", "Preparation"], desc: "Dense clouds, no rain yet. The west wind brings rain." },
+            "110111": { name: "Treading", pinyin: "Lǚ", keywords: ["Conduct", "Carefulness", "Progress"], desc: "Treading upon the tail of the tiger. It does not bite the man. Success." },
+            "111000": { name: "Peace", pinyin: "Tài", keywords: ["Prosperity", "Harmony", "Expansion"], desc: "The small departs, the great approaches. Good fortune. Success." },
+            "000111": { name: "Standstill", pinyin: "Pǐ", keywords: ["Stagnation", "Withdrawal", "Patience"], desc: "The great departs, the small approaches. Persistence brings misfortune." },
+            "101111": { name: "Fellowship", pinyin: "Tóng Rén", keywords: ["Community", "Relationships", "Sharing"], desc: "Fellowship with men in the open. Success. Perseverance furthers." },
+            "111101": { name: "Great Possession", pinyin: "Dà Yǒu", keywords: ["Abundance", "Power", "Clarity"], desc: "Supreme success." },
+            "001000": { name: "Modesty", pinyin: "Qiān", keywords: ["Humility", "Respect", "Acceptance"], desc: "Success. The superior man carries things through." },
+            "000100": { name: "Enthusiasm", pinyin: "Yù", keywords: ["Inspiration", "Movement", "Awakening"], desc: "Success. It furthers one to install helpers and to set armies marching." },
+            "100110": { name: "Following", pinyin: "Suí", keywords: ["Adaptability", "Flow", "Leadership"], desc: "Supreme success. Perseverance furthers. No blame." },
+            "011001": { name: "Work on the Decayed", pinyin: "Gǔ", keywords: ["Renewal", "Restoration", "Duty"], desc: "Supreme success. Before the starting point, three days. After the starting point, three days." },
+            "110001": { name: "Approach", pinyin: "Lín", keywords: ["Progress", "Expansion", "Care"], desc: "Supreme success. Perseverance furthers." },
+            "100011": { name: "Contemplation", pinyin: "Guān", keywords: ["Perspective", "View", "Stillness"], desc: "Contemplation. The ablution has been made, but not yet the offering. Full sincerity." },
+            "100101": { name: "Biting Through", pinyin: "Shì Kè", keywords: ["Decision", "Obstacles", "Justice"], desc: "Biting through has success. It is favorable to let justice be administered." },
+            "101001": { name: "Grace", pinyin: "Bì", keywords: ["Beauty", "Adornment", "Form"], desc: "Grace has success. In small matters. It is favorable to undertake something." },
+            "000001": { name: "Splitting Apart", pinyin: "Bō", keywords: ["Decay", "Disintegration", "Collapse"], desc: "Splitting apart. It does not further one to go anywhere." },
+            "100000": { name: "Return", pinyin: "Fù", keywords: ["Rebirth", "Cycle", "Turning Point"], desc: "Return. Success. Going out and coming in without error. Friends come without blame." },
+            "100111": { name: "Innocence", pinyin: "Wú Wàng", keywords: ["Purity", "Spontaneity", "Naturalness"], desc: "Innocent. Supreme success. Perseverance furthers. If someone is not as he should be, he has misfortune." },
+            "111001": { name: "Great Taming", pinyin: "Dà Chù", keywords: ["Great Power", "Self-Control", "Stopping"], desc: "Great Taming. Perseverance furthers. Not eating at home brings good fortune." },
+            "100001": { name: "Mouth Corners", pinyin: "Yí", keywords: ["Nourishment", "Speech", "Health"], desc: "The corners of the mouth. Perseverance brings good fortune. Pay heed to the providing of nourishment." },
+            "011110": { name: "Great Preponderance", pinyin: "Dà Guò", keywords: ["Excess", "Crisis", "Load"], desc: "Great Preponderance. The ridgepole sags to the breaking point. It furthers one to have somewhere to go." },
+            "010010": { name: "The Abysmal", pinyin: "Kǎn", keywords: ["Danger", "Depth", "Wisdom"], desc: "The Abysmal repeated. If you are sincere, you have success in your heart." },
+            "101101": { name: "The Clinging", pinyin: "Lí", keywords: ["Dependence", "Clarity", "Radiance"], desc: "The Clinging. Perseverance furthers. It brings success. Care of the cow brings good fortune." },
+            "001110": { name: "Influence", pinyin: "Xián", keywords: ["Attraction", "Courtship", "Response"], desc: "Influence. Success. Perseverance furthers. Take a maiden for your wife." },
+            "011100": { name: "Duration", pinyin: "Héng", keywords: ["Constancy", "Steadfastness", "Time"], desc: "Duration. Success. No blame. Perseverance furthers. To have somewhere to go brings good fortune." },
+            "001111": { name: "Retreat", pinyin: "Dùn", keywords: ["Withdrawal", "Solitude", "Retreat"], desc: "Retreat. Success. In small matters, good fortune." },
+            "111100": { name: "Great Power", pinyin: "Dà Zhuàng", keywords: ["Great Strength", "Vigor", "Potential"], desc: "Great Power. Perseverance furthers." },
+            "000101": { name: "Progress", pinyin: "Jìn", keywords: ["Advancement", "Success", "Shine"], desc: "Progress. The powerful prince is honored with horses in large numbers." },
+            "101000": { name: "Darkened", pinyin: "Míng Yí", keywords: ["Adversity", "Patience", "Light"], desc: "Darkening of the Light. In adversity, it furthers one to be persevering." },
+            "101011": { name: "The Family", pinyin: "Jiā Rén", keywords: ["Home", "Relationships", "Duty"], desc: "The Family. The perseverance of the woman furthers." },
+            "110101": { name: "Opposition", pinyin: "Kuí", keywords: ["Conflict", "Alienation", "Understanding"], desc: "Opposition. In small matters, good fortune." },
+            "001010": { name: "Obstruction", pinyin: "Jiǎn", keywords: ["Difficulty", "Halt", "Reflection"], desc: "Obstruction. The southwest furthers. The northeast does not further." },
+            "010100": { name: "Deliverance", pinyin: "Xiè", keywords: ["Release", "Solution", "Freedom"], desc: "Deliverance. The southwest furthers. If there is no longer anything where one has to go, return brings good fortune." },
+            "110001": { name: "Decrease", pinyin: "Sǔn", keywords: ["Loss", "Sacrifice", "Humility"], desc: "Decrease combined with sincerity brings about supreme success without misfortune." },
+            "100011": { name: "Increase", pinyin: "Yì", keywords: ["Gain", "Growth", "Blessing"], desc: "Increase. Supreme success. Perseverance furthers." },
+            "111110": { name: "Breakthrough", pinyin: "Guài", keywords: ["Resoluteness", "Action", "Clarity"], desc: "Breakthrough. One must resolutely make the matter known at the court of the king." },
+            "011111": { name: "Coming to Meet", pinyin: "Gòu", keywords: ["Encounter", "Warning", "Feminine Power"], desc: "Coming to Meet. The maiden is powerful. One should not marry such a maiden." },
+            "000110": { name: "Gathering", pinyin: "Cuì", keywords: ["Union", "Masses", "Support"], desc: "Gathering together. Success. The king approaches his temple. It furthers one to see the great man." },
+            "011000": { name: "Pushing Upward", pinyin: "Shēng", keywords: ["Ascension", "Growth", "Effort"], desc: "Pushing upward has supreme success. One must see the great man. Fear not." },
+            "010110": { name: "Oppression", pinyin: "Kùn", keywords: ["Hardship", "Exhaustion", "Endurance"], desc: "Oppression. Success. Perseverance. The great man brings about good fortune. No blame." },
+            "011010": { name: "The Well", pinyin: "Jǐng", keywords: ["Resource", "Depth", "Nourishment"], desc: "The Well. The town may be changed, but the well cannot be changed." },
+            "011011": { name: "Revolution", pinyin: "Gé", keywords: ["Change", "Molting", "Transition"], desc: "Revolution. On your own day you are believed. Supreme success. Furthering through perseverance brings remorse." },
+            "001101": { name: "The Cauldron", pinyin: "Dǐng", keywords: ["Establishment", "Nourishment", "Civilization"], desc: "The Cauldron. Supreme good fortune. Success." },
+            "100100": { name: "The Arousing", pinyin: "Zhèn", keywords: ["Shock", "Movement", "Awakening"], desc: "The Arousing brings success. The Arousing comes." },
+            "001001": { name: "Keeping Still", pinyin: "Gèn", keywords: ["Stagnation", "Rest", "Stillness"], desc: "Keeping Still. Keeping his back still so that he no longer feels his body." },
+            "001011": { name: "Development", pinyin: "Jiàn", keywords: ["Gradual Progress", "Steady", "Courtship"], desc: "Development. The maiden is given in marriage. Good fortune. Perseverance furthers." },
+            "110100": { name: "The Marrying Maiden", pinyin: "Guī Mèi", keywords: ["Subordination", "Marginality"], desc: "The Marrying Maiden. Undertakings bring misfortune. Nothing that would further." },
+            "101100": { name: "Abundance", pinyin: "Fēng", keywords: ["Fullness", "Peak", "Clarity"], desc: "Abundance has success. The king attains abundance. Be not sad." },
+            "001110": { name: "The Wanderer", pinyin: "Lǚ", keywords: ["Travel", "Frugality", "Caution"], desc: "The Wanderer. Success through smallness. Perseverance brings good fortune to the wanderer." },
+            "101010": { name: "The Gentle", pinyin: "Xùn", keywords: ["Penetrating", "Wind", "Flexibility"], desc: "The Gentle. Success through what is small. It furthers one to have somewhere to go." },
+            "011101": { name: "The Joyous", pinyin: "Duì", keywords: ["Pleasure", "Friendliness", "Openness"], desc: "The Joyous. Success. Perseverance is favorable." },
+            "010011": { name: "Dispersion", pinyin: "Huàn", keywords: ["Disintegration", "Release", "Spiritual"], desc: "Dispersion. Success. The king approaches his temple. It furthers one to cross the great water." },
+            "110010": { name: "Limitation", pinyin: "Jié", keywords: ["Discipline", "Moderation", "Boundaries"], desc: "Limitation. Success. Galling limitation must not be persevered in." },
+            "110011": { name: "Inner Truth", pinyin: "Zhōng Fú", keywords: ["Sincerity", "Trust", "Heart"], desc: "Inner Truth. Pigs and fishes. Good fortune. It furthers one to cross the great water." },
+            "001100": { name: "Small Preponderance", pinyin: "Xiǎo Guò", keywords: ["Excess Minor", "Detail", "Caution"], desc: "Small Preponderance. Success. Perseverance furthers. Small things may be done; great things should not be done." },
+            "101010": { name: "After Completion", pinyin: "Jì Jì", keywords: ["Ending", "Transition", "Care"], desc: "After Completion. Success in small matters. Perseverance furthers." },
+            "010101": { name: "Before Completion", pinyin: "Wèi Jì", keywords: ["Beginning", "Chaos", "Potential"], desc: "Before Completion. Success. But the small fox crosses the ice. Get his tail wet." }
+        };
+
+        // DOM Elements
+        const stage = document.getElementById('stage');
+        const hexContainer = document.getElementById('hexagram-container');
+        const castBtn = document.getElementById('cast-btn');
+        const resultCard = document.getElementById('result-card');
+        const resName = document.getElementById('res-name');
+        const resPinyin = document.getElementById('res-pinyin');
+        const resBinary = document.getElementById('res-binary');
+        const resDesc = document.getElementById('res-desc');
+        const resKeywords = document.getElementById('res-keywords');
+        const movingMsg = document.getElementById('moving-msg');
+        const toast = document.getElementById('toast');
+
+        // State
+        let isCasting = false;
+        const lines = []; // Will store 6 lines (bottom to top)
+
+        // Helper: Random Integer
+        const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+        // Helper: Show Toast
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Function: Toss 3 Coins
+        function tossCoins() {
+            return new Promise((resolve) => {
+                const coins = document.querySelectorAll('.coin');
+                let sum = 0;
+                let rotations = [];
+
+                coins.forEach((coin, index) => {
+                    // Logic: Heads = 3, Tails = 2
+                    // 6 (Old Yin), 7 (Young Yang), 8 (Young Yin), 9 (Old Yang)
+                    const isHead = Math.random() > 0.5;
+                    const val = isHead ? 3 : 2;
+                    sum += val;
+
+                    // Visual Rotation logic
+                    // Base spins + additional spins for result
+                    // If Head: multiple of 360 (ends 0), If Tail: multiple of 360 + 180 (ends 180)
+                    const baseSpins = 5 * 360; 
+                    const outcomeRot = isHead ? 0 : 180;
+                    const totalRot = baseSpins + outcomeRot;
+                    
+                    // Add some randomness to start to look natural
+                    const randomStart = Math.floor(Math.random() * 360);
+                    
+                    coin.style.transition = 'none';
+                    coin.style.transform = `rotateY(${randomStart}deg)`;
+                    
+                    // Trigger reflow
+                    coin.offsetHeight; 
+                    
+                    coin.style.transition = 'transform 1s ease-out';
+                    coin.style.transform = `rotateY(${totalRot}deg)`;
+                    
+                    // Save current rotation so next spin adds to it
+                    coin.dataset.currentRot = totalRot + randomStart;
+                });
+
+                setTimeout(() => {
+                    resolve(sum);
+                }, 1100);
+            });
+        }
+
+        // Function: Interpret Coin Sum
+        function interpretLine(sum) {
+            // 6 = Old Yin (0 moving)
+            // 7 = Young Yang (1 static)
+            // 8 = Young Yin (0 static)
+            // 9 = Old Yang (1 moving)
+            if (sum === 6) return { val: 0, type: 'yin', moving: true };
+            if (sum === 7) return { val: 1, type: 'yang', moving: false };
+            if (sum === 8) return { val: 0, type: 'yin', moving: false };
+            if (sum === 9) return { val: 1, type: 'yang', moving: true };
+            return { val: 1, type: 'yang', moving: false }; // fallback
+        }
+
+        // Function: Render Line visually
+        function renderLine(lineObj, index) {
+            const lineEl = document.createElement('div');
+            lineEl.className = `line ${lineObj.type}`;
+            if (lineObj.moving) lineEl.classList.add('moving');
+            
+            // Staggered animation
+            lineEl.style.animationDelay = `${index * 0.2}s`;
+            
+            hexContainer.appendChild(lineEl);
+        }
+
+        // Main Casting Logic
+        async function castHexagram() {
+            if (isCasting) return;
+            isCasting = true;
+            castBtn.disabled = true;
+            castBtn.textContent = "Consulting...";
+            
+            // Reset
+            lines.length = 0;
+            hexContainer.innerHTML = '';
+            hexContainer.classList.remove('visible');
+            resultCard.style.display = 'none';
+            
+            // Wait a tiny bit to ensure UI updates
+            await new Promise(r => setTimeout(r, 200));
+            
+            hexContainer.classList.add('visible');
+
+            // Toss 6 times
+            for (let i = 0; i < 6; i++) {
+                const sum = await tossCoins();
+                const lineData = interpretLine(sum);
+                
+                // Add to array (bottom to top, but we unshift to visual stack is handled by flex-direction: column-reverse)
+                // Actually, let's just store them. The DOM append puts them at the bottom due to column-reverse.
+                lines.push(lineData);
+                renderLine(lineData, i);
+                
+                // Small pause between lines
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            // Compile Result
+            // The binary key in our data object is Top-to-Bottom.
+            // Our 'lines' array is Bottom-to-Top (index 0 is bottom line 1).
+            // So we need to reverse 'lines' to get Top-to-Bottom for the lookup key.
+            const topToBottom = [...lines].reverse();
+            const binaryKey = topToBottom.map(l => l.val).join('');
+            
+            displayResult(binaryKey);
+
+            // Reset State
+            isCasting = false;
+            castBtn.disabled = false;
+            castBtn.textContent = "Cast Again";
+        }
+
+        // Display Result
+        function displayResult(key) {
+            const data = hexagramData[key];
+            
+            if (!data) {
+                console.error("Key not found:", key);
+                resName.textContent = "Unknown";
+                resDesc.textContent = "The universe is silent.";
+                return;
+            }
+
+            resName.textContent = data.name;
+            resPinyin.textContent = data.pinyin;
+            resDesc.textContent = data.desc;
+            resBinary.textContent = `BINARY: ${key}`;
+            
+            // Tags
+            resKeywords.innerHTML = data.keywords.map(k => `<span class="tag">${k}</span>`).join('');
+
+            // Moving Lines Warning
+            const hasMoving = lines.some(l => l.moving);
+            movingMsg.style.display = hasMoving ? 'block' : 'none';
+
+            // Show Card
+            resultCard.style.display = 'block';
+            
+            // Scroll to result on mobile
+            if (window.innerWidth < 600) {
+                resultCard.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Event Listener
+        castBtn.addEventListener('click', castHexagram);
+
+    </script>
+</body>
+</html>
